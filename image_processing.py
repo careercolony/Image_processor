@@ -29,8 +29,9 @@ def is_nude(fileName):
 
 app = Flask(__name__)
 
-ALLOWED_EXTENSIONS_1 = set(['png', 'jpg', 'jpeg', 'gif', 'ppt'])
-#ALLOWED_EXTENSIONS_ALL = set(['png', 'jpg', 'jpeg', 'gif', 'pdf', 'mp4'])
+
+ALLOWED_EXTENSIONS_AVATAR_BG_PHOTO = set(['png', 'jpg', 'jpeg', 'gif'])
+ALLOWED_EXTENSIONS_ALL = set(['png', 'jpg', 'jpeg', 'gif', 'pdf', 'ppt', 'mp4'])
 
 today = datetime.date.today() 
 today = str(today) 
@@ -48,7 +49,12 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_1
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_AVATAR_BG_PHOTO
+
+def allowed_file_1(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_ALL
+
 
 @app.route('/avatar', methods=['POST'])
 def avatar():
@@ -56,7 +62,15 @@ def avatar():
 
     if 'image' in request.files and 'memberID' in request.form :
         file = request.files['image']
-        filename = request.form['memberID'] + ".jpg"
+      
+
+        filename = request.form['memberID']
+        encodedBytes = base64.b64encode(filename.encode("utf-8"))
+        encodedStr = str(encodedBytes, "utf-8")
+
+        filename = encodedStr+'.jpg'
+        print(filename)
+
     else:
         if not 'image' in request.files :res["error"] = "No Image"
         if not 'memberID' in request.form :res["error"] = "No user ID provided"
@@ -79,12 +93,13 @@ def avatar():
         #res["msg"] = "Valid_Image"
         shutil.copy(temp_file,filename)
         file = request.files['image']
-        new_file_name = base64.b64encode(b"memberID")  # b'eW91ciBuYW1l'
-        print(new_file_name)
-        filename = request.form['memberID'] + ".jpg"
+        
+        
+        
             
-        avatar = '/media/avatar/av_' +filename
-        res["msg"] = "Profile picture uploaded successfully"
+        avatar = '/' +filename
+        res["msg"] = "Avatar uploaded successfully"
+        res['avatar']=avatar  
         
         memberID = request.form['memberID']
         database['users'].update({'_id': memberID}, {"$set": {'avatar':avatar}})
@@ -99,8 +114,15 @@ def profile_bg():
 
     if 'image' in request.files and 'memberID' in request.form :
         file = request.files['image']
-        filename = request.form['memberID'] + ".jpg"
-        res["msg"] = "Profile picture uploaded successfully"
+        
+
+        filename = request.form['memberID']
+        encodedBytes = base64.b64encode(filename.encode("utf-8"))
+        encodedStr = str(encodedBytes, "utf-8")
+
+        filename = encodedStr+'.jpg'
+        print(filename)
+
     else:
         if not 'image' in request.files :res["error"] = "No Image"
         if not 'memberID' in request.form :res["error"] = "No user ID provided"
@@ -124,10 +146,12 @@ def profile_bg():
         #res["msg"] = "Valid_Image"
         shutil.copy(temp_file,filename)
         file = request.files['image']
-        filename = request.form['memberID'] + ".jpg"
+        
             
-        profile_bg = '/media/profile_bg/pb_' +filename
+        profile_bg = '/' +filename
         res["msg"] = "Profile picture uploaded successfully"
+        res['profile_bg']=profile_bg 
+
         
         memberID = request.form['memberID']
         database['users'].update({'_id': memberID}, {"$set": {'profile_bg':profile_bg}})
@@ -136,69 +160,13 @@ def profile_bg():
 
     return jsonify({"data": res})
 
-"""
-@app.route('/image', methods=['POST'])
-def image():
-    res = {}
-
-    file = request.files['image']
-    if 'image' in request.files and allowed_file(file.filename):
-    
-        
-        get_filename = secure_filename(file.filename)
-        filename, file_extension = os.path.splitext(get_filename)
-        print(file_extension)
-        
-        today = str(today)
-        encodedBytes = base64.b64encode(today.encode("utf-8"))
-        encodedStr = str(encodedBytes, "utf-8")
-
-        print(encodedStr)
-        
-        filename = encodedStr+file_extension
-        res["msg"] = filename
-    else:
-        if not 'image' in request.files :res["error"] = "No Image"
-        if not allowed_file(file.filename):res["error"] = "File type not supported"
-        
-        return jsonify({"data": res})
-
-    filename = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-
-    temp_file = os.path.join(app.config['UPLOAD_FOLDER'], "temp.jpg")
-    
-    file.save(temp_file)
-    
-    #res["msg"] = "Valid_Image"
-    shutil.copy(temp_file,filename)
-    file = request.files['image']
-    #filename = request.form['memberID'] + ".jpg"
-        
-    profile_bg = '/media/image/'+today+'/articles/pb_' +filename
-
-    print(profile_bg)
-    #new_image = profile_bg.resize((400, 400))
-    #print(new_image.size)
-    res["msg"] = filename
-
-    #memberID = request.form['memberID']
-    #database['users'].update({'_id': memberID}, {"$set": {'profile_bg':profile_bg}})
-
-    os.remove(temp_file)
-
-    return jsonify({"data": res})
-"""
-
 
 @app.route('/file', methods=['POST'])
 def post_images():
     res = {}
 
     file = request.files['image']
-    if 'image' in request.files and allowed_file(file.filename) and 'memberID' in request.form:
+    if 'image' in request.files and allowed_file_1(file.filename) and 'memberID' in request.form:
     
         
         get_filename = secure_filename(file.filename)
@@ -342,25 +310,32 @@ def multiple_images():
 
     return jsonify({"data": res})
 
-@app.route('/delete_file', methods=['POST'])
+@app.route('/delete_file', methods=['GET'])
 def delete_file():
     res = {}
 
     #remove file
-    filepath = request.args.get('http://localhost/media/image/...........jpg')
-   
-    os.remove("demofile.txt")
+    filepath = request.args.get('path')
+    print(filepath)
+    
+    
+    #os.remove(filepath)
 
     #check if file exists
-    if os.path.exists("demofile.txt"):
-        os.remove("demofile.txt")
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        res['success']= "File removed successfully" 
     else:
+        res["error"] = "The file does not exist"
         print("The file does not exist")
 
+    """
     #delete folder 
     os.rmdir("myfolder")
+    """
 
-
+    
+    return jsonify({"data": res})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=5001, debug=True)
