@@ -10,8 +10,6 @@ import base64
 
 
 
-
-
 #import nude
 #from nude import Nude
 from nudity import Nudity
@@ -271,7 +269,7 @@ def multiple_images():
     filenames = []
     for file in uploaded_files:
         # Check if the file is one of the allowed types/extensions
-        if file and allowed_file(file.filename):
+        if file and allowed_file_1(file.filename):
             # Make the filename safe, remove unsupported chars
             get_filename = secure_filename(file.filename)
             filename, file_extension = os.path.splitext(get_filename)
